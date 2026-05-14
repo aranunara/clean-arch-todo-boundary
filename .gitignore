@@ -1,0 +1,17 @@
+# Go build outputs
+/server
+/todoctl
+/bin/
+/dist/
+
+# Local env files
+.env
+.env.*
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log

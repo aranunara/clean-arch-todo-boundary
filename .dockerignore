@@ -1,0 +1,5 @@
+.git
+postgres-data
+tmp
+bin
+*.log
