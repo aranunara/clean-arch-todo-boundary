@@ -8,6 +8,9 @@ import (
 	"clean-arch-todo-boundary/internal/domain"
 )
 
+// TodoRepository は Usecase 層に置く。
+// これらの永続化操作を必要としているのは Todo という Domain model ではなく、
+// TODO 作成・変更・完了・一覧取得というアプリケーション操作だから。
 type TodoRepository interface {
 	Create(ctx context.Context, todo *domain.Todo) error
 	FindByID(ctx context.Context, id string) (*domain.Todo, error)
