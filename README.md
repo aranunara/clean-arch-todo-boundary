@@ -137,5 +137,6 @@ make try           CLI で TODO 作成と一覧取得を試す
 make cli args=...  todoctl を実行
 make test          go test ./...
 make lint          golangci-lint run
+make ci            test と lint を実行
 make run           in-memory 保存で API をローカル起動
 ```

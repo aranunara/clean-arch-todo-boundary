@@ -1,6 +1,8 @@
 MIGRATE_DATABASE_URL := postgres://todo:todo@db:5432/todo?sslmode=disable
+GO_CACHE ?= /tmp/clean-arch-todo-boundary-go-build
+GOLANGCI_LINT_CACHE_DIR ?= /tmp/clean-arch-todo-boundary-golangci-lint
 
-.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test lint run
+.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test lint ci run
 
 up:
 	$(MAKE) up-all
@@ -49,10 +51,12 @@ migrate-create:
 	docker compose run --rm migrate create -ext sql -dir /migrations -seq $(name)
 
 test:
-	go test ./...
+	GOCACHE=$(GO_CACHE) go test ./...
 
 lint:
-	GOLANGCI_LINT_CACHE=/private/tmp/clean-arch-todo-boundary-golangci-lint GOCACHE=/private/tmp/clean-arch-todo-boundary-go-build golangci-lint run
+	GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_DIR) GOCACHE=$(GO_CACHE) golangci-lint run
+
+ci: test lint
 
 run:
 	go run ./cmd/server
