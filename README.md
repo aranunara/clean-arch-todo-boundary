@@ -136,5 +136,6 @@ make logs          Compose サービスのログを表示
 make try           CLI で TODO 作成と一覧取得を試す
 make cli args=...  todoctl を実行
 make test          go test ./...
+make lint          golangci-lint run
 make run           in-memory 保存で API をローカル起動
 ```

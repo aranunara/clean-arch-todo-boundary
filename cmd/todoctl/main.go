@@ -153,7 +153,9 @@ func doJSON(client *http.Client, method, url string, requestBody any, responseBo
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		payload, _ := io.ReadAll(res.Body)

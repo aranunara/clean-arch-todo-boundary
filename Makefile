@@ -1,6 +1,6 @@
 MIGRATE_DATABASE_URL := postgres://todo:todo@db:5432/todo?sslmode=disable
 
-.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test run
+.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test lint run
 
 up:
 	$(MAKE) up-all
@@ -50,6 +50,9 @@ migrate-create:
 
 test:
 	go test ./...
+
+lint:
+	GOLANGCI_LINT_CACHE=/private/tmp/clean-arch-todo-boundary-golangci-lint GOCACHE=/private/tmp/clean-arch-todo-boundary-go-build golangci-lint run
 
 run:
 	go run ./cmd/server

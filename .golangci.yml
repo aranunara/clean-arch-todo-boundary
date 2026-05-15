@@ -1,0 +1,73 @@
+version: "2"
+
+linters:
+  enable:
+    - depguard
+  settings:
+    depguard:
+      rules:
+        # Domain は最内側の層。
+        # 業務ルール・不変条件だけを持ち、HTTP / DB / Usecase / Infra を知らない。
+        domain:
+          files:
+            - internal/domain/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+
+        # Usecase はアプリケーション操作の段取りを持つ層。
+        # Domain model は使うが、Handler や Infra の具象実装には依存しない。
+        usecase:
+          files:
+            - internal/usecase/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+            - clean-arch-todo-boundary/internal/domain
+
+        # Handler は HTTP と Usecase の変換境界。
+        # Usecase の input/output と Domain error の HTTP 変換だけを知り、Infra は知らない。
+        handler:
+          files:
+            - internal/handler/httpapi/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+            - clean-arch-todo-boundary/internal/domain
+            - clean-arch-todo-boundary/internal/usecase
+
+        # Infrastructure は外側の技術詳細。
+        # Usecase が定義した interface を満たすために Usecase / Domain の型を使ってよい。
+        # DB driver などの外部ライブラリはこの層に閉じ込める。
+        infra:
+          files:
+            - internal/infra/**/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+            - clean-arch-todo-boundary/internal/domain
+            - clean-arch-todo-boundary/internal/usecase
+            - github.com/jackc/pgx/v5
+
+        # DI は本番起動時の依存解決を担当する composition root。
+        # 具象実装を import してよいのはここに寄せ、各層の直接依存を増やさない。
+        di:
+          files:
+            - internal/di/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+            - clean-arch-todo-boundary/internal/handler/httpapi
+            - clean-arch-todo-boundary/internal/infra/memory
+            - clean-arch-todo-boundary/internal/infra/postgres
+            - clean-arch-todo-boundary/internal/usecase
+
+        # cmd はプロセスの entrypoint。
+        # アプリ本体の組み立ては internal/di に委譲し、cmd から各層へ直接依存しない。
+        cmd:
+          files:
+            - cmd/**/*.go
+          list-mode: strict
+          allow:
+            - $gostd
+            - clean-arch-todo-boundary/internal/di
