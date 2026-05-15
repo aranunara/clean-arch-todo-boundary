@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"unicode/utf8"
@@ -68,13 +67,4 @@ func normalizeTitle(title string) (string, error) {
 		return "", ErrInvalidTodoTitle
 	}
 	return trimmed, nil
-}
-
-// TodoRepository は TODO の永続化に必要な契約を表す。
-// SQL や保存方式は Infrastructure 側で具体化する。
-type TodoRepository interface {
-	Create(ctx context.Context, todo *Todo) error
-	FindByID(ctx context.Context, id string) (*Todo, error)
-	Update(ctx context.Context, todo *Todo) error
-	List(ctx context.Context) ([]*Todo, error)
 }

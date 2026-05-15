@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,11 +10,18 @@ import (
 	"clean-arch-todo-boundary/internal/usecase"
 )
 
-type TodoHandler struct {
-	todoUseCase *usecase.TodoUseCase
+type TodoUseCase interface {
+	CreateTodo(ctx context.Context, input usecase.CreateTodoInput) (*usecase.TodoOutput, error)
+	RenameTodo(ctx context.Context, input usecase.RenameTodoInput) (*usecase.TodoOutput, error)
+	CompleteTodo(ctx context.Context, id string) (*usecase.TodoOutput, error)
+	ListTodos(ctx context.Context) ([]usecase.TodoOutput, error)
 }
 
-func NewTodoHandler(todoUseCase *usecase.TodoUseCase) *TodoHandler {
+type TodoHandler struct {
+	todoUseCase TodoUseCase
+}
+
+func NewTodoHandler(todoUseCase TodoUseCase) *TodoHandler {
 	return &TodoHandler{todoUseCase: todoUseCase}
 }
 

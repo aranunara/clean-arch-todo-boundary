@@ -9,12 +9,13 @@ Domain / Usecase / Infrastructure / Handler を分け、Usecase が保存先の�
 ## Features
 
 - Go 標準の `net/http` による TODO API
-- Domain の Repository interface と Infrastructure 実装の分離
+- Usecase の Repository interface と Infrastructure 実装の分離
 - in-memory Repository
 - PostgreSQL Repository
 - Docker Compose による PostgreSQL / migration / API 起動
 - golang-migrate 互換の SQL migration
 - 起動中の API ポートを自動検出する `todoctl` CLI
+- `internal/di` による依存関係の組み立て
 
 ## Requirements
 

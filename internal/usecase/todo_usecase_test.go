@@ -10,7 +10,7 @@ import (
 )
 
 func TestCreateTodo(t *testing.T) {
-	uc := NewTodoUseCase(memory.NewTodoRepository())
+	uc := NewTodoUseCase(memory.NewTodoRepository(), fixedIDGenerator{id: "todo-1"})
 
 	output, err := uc.CreateTodo(context.Background(), CreateTodoInput{
 		Title: "record architecture boundary",
@@ -19,8 +19,8 @@ func TestCreateTodo(t *testing.T) {
 		t.Fatalf("CreateTodo returned error: %v", err)
 	}
 
-	if output.ID == "" {
-		t.Fatal("ID is empty")
+	if output.ID != "todo-1" {
+		t.Fatalf("ID = %q, want %q", output.ID, "todo-1")
 	}
 	if output.Completed {
 		t.Fatal("Completed = true, want false")
@@ -29,7 +29,7 @@ func TestCreateTodo(t *testing.T) {
 
 func TestRenameTodo_CompletedTodo(t *testing.T) {
 	ctx := context.Background()
-	uc := NewTodoUseCase(memory.NewTodoRepository())
+	uc := NewTodoUseCaseWithInitialID(memory.NewTodoRepository(), 0)
 
 	created, err := uc.CreateTodo(ctx, CreateTodoInput{Title: "write note"})
 	if err != nil {
@@ -46,4 +46,12 @@ func TestRenameTodo_CompletedTodo(t *testing.T) {
 	if !errors.Is(err, domain.ErrTodoCompleted) {
 		t.Fatalf("RenameTodo error = %v, want %v", err, domain.ErrTodoCompleted)
 	}
+}
+
+type fixedIDGenerator struct {
+	id string
+}
+
+func (g fixedIDGenerator) NextID() string {
+	return g.id
 }

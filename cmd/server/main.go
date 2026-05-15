@@ -8,31 +8,26 @@ import (
 	"os/signal"
 	"time"
 
-	"clean-arch-todo-boundary/internal/domain"
-	"clean-arch-todo-boundary/internal/handler/httpapi"
-	"clean-arch-todo-boundary/internal/infra/memory"
-	"clean-arch-todo-boundary/internal/infra/postgres"
-	"clean-arch-todo-boundary/internal/usecase"
+	"clean-arch-todo-boundary/internal/di"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	todoRepo, initialID, closeRepo := openTodoRepository(ctx)
-	defer closeRepo()
+	container, err := di.NewContainer(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer container.Close()
 
-	todoUseCase := usecase.NewTodoUseCaseWithInitialID(todoRepo, initialID)
-	todoHandler := httpapi.NewTodoHandler(todoUseCase)
-
-	addr := ":" + envOrDefault("PORT", "8080")
 	server := &http.Server{
-		Addr:    addr,
-		Handler: todoHandler.Routes(),
+		Addr:    container.HTTPAddr(),
+		Handler: container.HTTPHandler(),
 	}
 
 	go func() {
-		log.Printf("listening on http://localhost%s", addr)
+		log.Printf("listening on http://localhost%s", container.HTTPAddr())
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
@@ -45,34 +40,4 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func openTodoRepository(ctx context.Context) (domain.TodoRepository, uint64, func()) {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		log.Println("DATABASE_URL is empty; using in-memory repository")
-		return memory.NewTodoRepository(), 0, func() {}
-	}
-
-	todoRepo, err := postgres.NewTodoRepository(ctx, databaseURL)
-	if err != nil {
-		log.Fatalf("open postgres repository: %v", err)
-	}
-
-	initialID, err := todoRepo.MaxNumericID(ctx)
-	if err != nil {
-		todoRepo.Close()
-		log.Fatalf("load current todo id: %v", err)
-	}
-
-	log.Println("using postgres repository")
-	return todoRepo, initialID, todoRepo.Close
-}
-
-func envOrDefault(key, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-	return value
 }

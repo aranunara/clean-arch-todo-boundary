@@ -7,12 +7,14 @@
 ```text
 Handler
   -> Usecase
-      -> Domain の Repository interface
+      -> Usecase の Repository interface
           <- Infrastructure の Repository 実装
 ```
 
 Usecase は保存先が PostgreSQL なのか、メモリなのかを知りません。
-Infrastructure が Domain の interface を満たすことで、外側の詳細を内側へ差し込みます。
+Infrastructure が Usecase の interface を満たすことで、外側の詳細を内側へ差し込みます。
+
+`internal/di` は本番起動時の依存解決だけを担当します。Handler / Usecase / Infrastructure の間に直接の具象依存を増やさず、どの実装を使うかはここで組み立てます。
 
 ## 層ごとの責務
 
@@ -22,6 +24,7 @@ Infrastructure が Domain の interface を満たすことで、外側の詳細�
 | Usecase | TODO 作成・変更・完了など、アプリケーション操作の段取り | `internal/usecase/todo_usecase.go` |
 | Infrastructure | Repository interface をメモリ保存 / PostgreSQL 保存で具体化 | `internal/infra/memory/todo_repository.go`, `internal/infra/postgres/todo_repository.go` |
 | Handler | HTTP リクエスト/レスポンスへの変換 | `internal/handler/httpapi/todo_handler.go` |
+| DI | 本番起動時の依存関係の解決 | `internal/di/container.go` |
 
 ## 個人的な理解
 
@@ -46,8 +49,8 @@ Usecase にあるのは「操作を成立させる手順」だと考えていま
 - Repository interface 経由で保存する
 - 出力 DTO に変換する
 
-Repository は独立した 1 層というより、Domain と Infrastructure の境界として捉えています。
+Repository は独立した 1 層というより、Usecase と Infrastructure の境界として捉えています。
 
 ```text
-Usecase -> Domain の TodoRepository interface <- Infra の Repository 実装
+Usecase -> TodoRepository interface <- Infra の Repository 実装
 ```

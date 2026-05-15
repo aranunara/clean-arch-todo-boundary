@@ -8,19 +8,45 @@ import (
 	"clean-arch-todo-boundary/internal/domain"
 )
 
+type TodoRepository interface {
+	Create(ctx context.Context, todo *domain.Todo) error
+	FindByID(ctx context.Context, id string) (*domain.Todo, error)
+	Update(ctx context.Context, todo *domain.Todo) error
+	List(ctx context.Context) ([]*domain.Todo, error)
+}
+
+type TodoIDGenerator interface {
+	NextID() string
+}
+
+type SequentialTodoIDGenerator struct {
+	nextID atomic.Uint64
+}
+
+func NewSequentialTodoIDGenerator(initialID uint64) *SequentialTodoIDGenerator {
+	generator := &SequentialTodoIDGenerator{}
+	generator.nextID.Store(initialID)
+	return generator
+}
+
+func (g *SequentialTodoIDGenerator) NextID() string {
+	return strconv.FormatUint(g.nextID.Add(1), 10)
+}
+
 type TodoUseCase struct {
-	todoRepo domain.TodoRepository
-	nextID   atomic.Uint64
+	todoRepo    TodoRepository
+	idGenerator TodoIDGenerator
 }
 
-func NewTodoUseCase(todoRepo domain.TodoRepository) *TodoUseCase {
-	return &TodoUseCase{todoRepo: todoRepo}
+func NewTodoUseCase(todoRepo TodoRepository, idGenerator TodoIDGenerator) *TodoUseCase {
+	return &TodoUseCase{
+		todoRepo:    todoRepo,
+		idGenerator: idGenerator,
+	}
 }
 
-func NewTodoUseCaseWithInitialID(todoRepo domain.TodoRepository, initialID uint64) *TodoUseCase {
-	uc := NewTodoUseCase(todoRepo)
-	uc.nextID.Store(initialID)
-	return uc
+func NewTodoUseCaseWithInitialID(todoRepo TodoRepository, initialID uint64) *TodoUseCase {
+	return NewTodoUseCase(todoRepo, NewSequentialTodoIDGenerator(initialID))
 }
 
 type CreateTodoInput struct {
@@ -39,7 +65,7 @@ type TodoOutput struct {
 }
 
 func (uc *TodoUseCase) CreateTodo(ctx context.Context, input CreateTodoInput) (*TodoOutput, error) {
-	id := strconv.FormatUint(uc.nextID.Add(1), 10)
+	id := uc.idGenerator.NextID()
 
 	todo, err := domain.NewTodo(id, input.Title)
 	if err != nil {

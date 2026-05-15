@@ -8,7 +8,7 @@ import (
 	"clean-arch-todo-boundary/internal/domain"
 )
 
-// TodoRepository は domain.TodoRepository を in-memory map で具体化する。
+// TodoRepository は usecase.TodoRepository を in-memory map で具体化する。
 // 実アプリではこの層が PostgreSQL の INSERT/SELECT/UPDATE などに置き換わる。
 type TodoRepository struct {
 	mu    sync.RWMutex
