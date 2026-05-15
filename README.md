@@ -1,81 +1,58 @@
 # Clean Architecture TODO Boundary
 
-TODO アプリを題材に、Domain / Usecase / Infrastructure / Handler の境界を記録するための小さな Go サンプルです。
+Clean Architecture の境界を TODO アプリで確認するための小さな Go サンプルです。
 
-## 依存の向き
+Domain / Usecase / Infrastructure / Handler を分け、Usecase が保存先の詳細を知らない構成にしています。保存先は in-memory と PostgreSQL の 2 種類を用意しています。
 
-```text
-Handler
-  -> Usecase
-      -> Domain の Repository interface
-          <- Infrastructure の Repository 実装
-```
+設計の考え方は [ARCHITECTURE.md](./ARCHITECTURE.md) にまとめています。
 
-Usecase は保存先が PostgreSQL なのか、メモリなのかを知りません。
-Infrastructure が Domain の interface を満たすことで、外側の詳細を内側へ差し込みます。
+## Features
 
-## 層ごとの責務
+- Go 標準の `net/http` による TODO API
+- Domain の Repository interface と Infrastructure 実装の分離
+- in-memory Repository
+- PostgreSQL Repository
+- Docker Compose による PostgreSQL / migration / API 起動
+- golang-migrate 互換の SQL migration
+- 起動中の API ポートを自動検出する `todoctl` CLI
 
-| 層 | 責務 | ファイル |
-|---|---|---|
-| Domain | TODO という業務概念のルール・状態・判断 | `internal/domain/todo.go` |
-| Usecase | TODO 作成・変更・完了など、アプリケーション操作の段取り | `internal/usecase/todo_usecase.go` |
-| Infrastructure | Repository interface をメモリ保存 / PostgreSQL 保存で具体化 | `internal/infra/memory/todo_repository.go`, `internal/infra/postgres/todo_repository.go` |
-| Handler | HTTP リクエスト/レスポンスへの変換 | `internal/handler/httpapi/todo_handler.go` |
+## Requirements
 
-## 個人的な理解
+- Go 1.26+
+- Docker
+- Docker Compose
 
-```text
-Domain = 業務概念を外部事情から切り離して扱う
-Usecase = Domain をオーケストレートして操作を完了させる
-Infra = Domain / Usecase が必要とする外部依存を具体化する
-Handler = HTTP との入出力境界を担当する
-```
+## Quick Start
 
-自分の中では、Domain にあるのは「TODO として正しい状態」です。
-
-- title は空にできない
-- title は 100 文字以内
-- 完了済み TODO は rename できない
-- TODO を complete すると `Completed` が true になる
-
-Usecase にあるのは「操作を成立させる手順」だと考えています。
-
-- ID を発行する
-- Domain の `NewTodo` / `Rename` / `Complete` を呼ぶ
-- Repository interface 経由で保存する
-- 出力 DTO に変換する
-
-Repository は独立した 1 層というより、Domain と Infrastructure の境界として捉えています。
-
-```text
-Usecase -> Domain の TodoRepository interface <- Infra の memory.TodoRepository 実装
-```
-
-## 実行
-
-Docker で PostgreSQL、golang-migrate、API をまとめて起動する場合:
+API、PostgreSQL、migration をまとめて起動します。
 
 ```bash
 make up-all
 ```
 
-バックグラウンドで起動する場合:
+`make up-all` はバックグラウンドで起動し、API と DB に割り当てられたホスト側ポートを表示します。ポートは未指定なら空いているものが自動で使われます。
 
-```bash
-make up-d
-```
-
-`make up-all` は PostgreSQL の healthcheck を待ち、`migrations/` の SQL を `migrate/migrate` で適用してから API をバックグラウンドで起動します。
-起動後に、割り当てられた API / DB のポートも表示されます。
-
-起動した API をすぐ試す場合:
+すぐに動作確認する場合:
 
 ```bash
 make try
 ```
 
-CLI から操作する場合:
+停止する場合:
+
+```bash
+make down-all
+```
+
+データ volume も削除する場合:
+
+```bash
+make down-v
+```
+
+## CLI
+
+`todoctl` は Docker Compose で起動した API のポートを自動で検出します。
 
 ```bash
 go run ./cmd/todoctl url
@@ -85,53 +62,78 @@ go run ./cmd/todoctl rename 1 "Domain と Usecase の違いをメモする"
 go run ./cmd/todoctl complete 1
 ```
 
-`todoctl` は `TODO_API_URL` が指定されていなければ、`docker compose port api 8080` から API のポートを自動で見つけます。
-
-API と PostgreSQL をまとめて停止する場合:
+API URL を明示したい場合:
 
 ```bash
-make down-all
+TODO_API_URL=http://127.0.0.1:18080 go run ./cmd/todoctl list
 ```
 
-ホスト側のポートは、未指定なら空いているポートが自動で割り当てられます。
-割り当てられたポートを確認する場合:
+Makefile 経由で CLI を呼ぶこともできます。
+
+```bash
+make cli args='list'
+make cli args='create "README を整える"'
+```
+
+## HTTP API
+
+API のポートを確認します。
 
 ```bash
 make ports
 ```
 
-ホスト側のポートを固定したい場合:
+例として `http://127.0.0.1:18080` に API が出ている場合:
 
 ```bash
-API_PORT=18080 POSTGRES_PORT=15432 make up-all
+curl -s -X POST http://127.0.0.1:18080/todos \
+  -H 'content-type: application/json' \
+  -d '{"title":"層の違いをメモする"}'
+
+curl -s http://127.0.0.1:18080/todos
+
+curl -s -X PATCH http://127.0.0.1:18080/todos/1 \
+  -H 'content-type: application/json' \
+  -d '{"title":"Domain と Usecase の違いをメモする"}'
+
+curl -s -X POST http://127.0.0.1:18080/todos/1/complete
 ```
 
-migration だけ実行したい場合:
+## Local Run
+
+Docker を使わずに起動すると、保存先は in-memory になります。
+
+```bash
+go run ./cmd/server
+```
+
+この場合は `http://127.0.0.1:8080` で API が起動します。
+
+## Migration
+
+migration ファイルは [migrations/](./migrations) にあります。
 
 ```bash
 make migrate-up
 make migrate-down
 ```
 
-Docker を使わず、メモリ保存で起動する場合:
+新しい migration を作る場合:
 
 ```bash
-go test ./...
-go run ./cmd/server
+make migrate-create name=add_due_date_to_todos
 ```
 
-別ターミナルから:
+## Make Targets
 
-```bash
-curl -s -X POST http://127.0.0.1:8080/todos \
-  -H 'content-type: application/json' \
-  -d '{"title":"層の違いをメモする"}'
-
-curl -s http://127.0.0.1:8080/todos
-
-curl -s -X PATCH http://127.0.0.1:8080/todos/1 \
-  -H 'content-type: application/json' \
-  -d '{"title":"Domain と Usecase の違いをメモする"}'
-
-curl -s -X POST http://127.0.0.1:8080/todos/1/complete
+```text
+make up-all        API / PostgreSQL / migration を起動
+make down-all      API / PostgreSQL を停止
+make down-v        停止して volume も削除
+make ports         API / DB の割り当てポートを表示
+make logs          Compose サービスのログを表示
+make try           CLI で TODO 作成と一覧取得を試す
+make cli args=...  todoctl を実行
+make test          go test ./...
+make run           in-memory 保存で API をローカル起動
 ```
