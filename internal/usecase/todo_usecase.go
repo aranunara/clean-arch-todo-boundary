@@ -48,10 +48,6 @@ func NewTodoUseCase(todoRepo TodoRepository, idGenerator TodoIDGenerator) *TodoU
 	}
 }
 
-func NewTodoUseCaseWithInitialID(todoRepo TodoRepository, initialID uint64) *TodoUseCase {
-	return NewTodoUseCase(todoRepo, NewSequentialTodoIDGenerator(initialID))
-}
-
 type CreateTodoInput struct {
 	Title string
 }
