@@ -88,6 +88,33 @@ func TestCompleteTodo(t *testing.T) {
 	}
 }
 
+func TestDeleteTodo(t *testing.T) {
+	t.Run("passes path id to usecase", func(t *testing.T) {
+		fake := &fakeTodoUseCase{}
+		response := serveRequest(fake, http.MethodDelete, "/todos/123", "")
+
+		if response.Code != http.StatusNoContent {
+			t.Fatalf("status = %d, want %d", response.Code, http.StatusNoContent)
+		}
+		if fake.deleteID != "123" {
+			t.Fatalf("deleteID = %q, want %q", fake.deleteID, "123")
+		}
+		if fake.deleteCalls != 1 {
+			t.Fatalf("deleteCalls = %d, want 1", fake.deleteCalls)
+		}
+		if response.Body.Len() != 0 {
+			t.Fatalf("body = %q, want empty body", response.Body.String())
+		}
+	})
+
+	t.Run("returns not found", func(t *testing.T) {
+		fake := &fakeTodoUseCase{deleteErr: domain.ErrTodoNotFound}
+		response := serveRequest(fake, http.MethodDelete, "/todos/missing", "")
+
+		assertErrorResponse(t, response, http.StatusNotFound, "todo not found")
+	})
+}
+
 func TestListTodos(t *testing.T) {
 	fake := &fakeTodoUseCase{
 		listOutput: []usecase.TodoOutput{
@@ -173,15 +200,18 @@ type fakeTodoUseCase struct {
 	createInput usecase.CreateTodoInput
 	renameInput usecase.RenameTodoInput
 	completeID  string
+	deleteID    string
 	listOutput  []usecase.TodoOutput
 
 	createErr   error
 	renameErr   error
 	completeErr error
+	deleteErr   error
 	listErr     error
 
 	createCalls int
 	renameCalls int
+	deleteCalls int
 }
 
 func (f *fakeTodoUseCase) CreateTodo(_ context.Context, input usecase.CreateTodoInput) (*usecase.TodoOutput, error) {
@@ -217,6 +247,12 @@ func (f *fakeTodoUseCase) CompleteTodo(_ context.Context, id string) (*usecase.T
 		ID:        id,
 		Completed: true,
 	}, nil
+}
+
+func (f *fakeTodoUseCase) DeleteTodo(_ context.Context, id string) error {
+	f.deleteCalls++
+	f.deleteID = id
+	return f.deleteErr
 }
 
 func (f *fakeTodoUseCase) ListTodos(context.Context) ([]usecase.TodoOutput, error) {

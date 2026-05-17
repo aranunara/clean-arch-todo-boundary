@@ -63,6 +63,11 @@ func run(args []string) error {
 			return usage()
 		}
 		return completeTodo(client, baseURL, args[1])
+	case "delete":
+		if len(args) != 2 {
+			return usage()
+		}
+		return deleteTodo(client, baseURL, args[1])
 	default:
 		return usage()
 	}
@@ -131,6 +136,10 @@ func completeTodo(client *http.Client, baseURL, id string) error {
 	return printJSON(completed)
 }
 
+func deleteTodo(client *http.Client, baseURL, id string) error {
+	return doJSON(client, http.MethodDelete, baseURL+"/todos/"+id, nil, nil)
+}
+
 func doJSON(client *http.Client, method, url string, requestBody any, responseBody any) error {
 	var body io.Reader
 	if requestBody != nil {
@@ -162,6 +171,10 @@ func doJSON(client *http.Client, method, url string, requestBody any, responseBo
 		return fmt.Errorf("%s %s returned %s: %s", method, url, res.Status, strings.TrimSpace(string(payload)))
 	}
 
+	if responseBody == nil {
+		return nil
+	}
+
 	return json.NewDecoder(res.Body).Decode(responseBody)
 }
 
@@ -181,6 +194,7 @@ func usage() error {
   go run ./cmd/todoctl create "層の違いをメモする"
   go run ./cmd/todoctl rename 1 "Domain と Usecase の違いをメモする"
   go run ./cmd/todoctl complete 1
+  go run ./cmd/todoctl delete 1
 
 env:
   TODO_API_URL=http://127.0.0.1:18080`)

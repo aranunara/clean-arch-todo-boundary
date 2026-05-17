@@ -16,6 +16,8 @@ type TodoRepository interface {
 	FindByID(ctx context.Context, id string) (*domain.Todo, error)
 	Update(ctx context.Context, todo *domain.Todo) error
 	List(ctx context.Context) ([]*domain.Todo, error)
+	MaxNumericID(ctx context.Context) (uint64, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type TodoIDGenerator interface {
@@ -108,6 +110,10 @@ func (uc *TodoUseCase) CompleteTodo(ctx context.Context, id string) (*TodoOutput
 	}
 
 	return toTodoOutput(todo), nil
+}
+
+func (uc *TodoUseCase) DeleteTodo(ctx context.Context, id string) error {
+	return uc.todoRepo.Delete(ctx, id)
 }
 
 func (uc *TodoUseCase) ListTodos(ctx context.Context) ([]TodoOutput, error) {

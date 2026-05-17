@@ -14,6 +14,7 @@ type TodoUseCase interface {
 	CreateTodo(ctx context.Context, input usecase.CreateTodoInput) (*usecase.TodoOutput, error)
 	RenameTodo(ctx context.Context, input usecase.RenameTodoInput) (*usecase.TodoOutput, error)
 	CompleteTodo(ctx context.Context, id string) (*usecase.TodoOutput, error)
+	DeleteTodo(ctx context.Context, id string) error
 	ListTodos(ctx context.Context) ([]usecase.TodoOutput, error)
 }
 
@@ -31,6 +32,7 @@ func (h *TodoHandler) Routes() http.Handler {
 	mux.HandleFunc("POST /todos", h.createTodo)
 	mux.HandleFunc("PATCH /todos/{id}", h.renameTodo)
 	mux.HandleFunc("POST /todos/{id}/complete", h.completeTodo)
+	mux.HandleFunc("DELETE /todos/{id}", h.deleteTodo)
 	return mux
 }
 
@@ -83,6 +85,15 @@ func (h *TodoHandler) completeTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, output)
+}
+
+func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
+	if err := h.todoUseCase.DeleteTodo(r.Context(), r.PathValue("id")); err != nil {
+		writeUseCaseError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *TodoHandler) listTodos(w http.ResponseWriter, r *http.Request) {

@@ -199,6 +199,39 @@ func TestListTodos(t *testing.T) {
 	})
 }
 
+func TestDeleteTodo(t *testing.T) {
+	t.Run("deletes existing todo", func(t *testing.T) {
+		repo := newFakeTodoRepository()
+		repo.mustStore(t, "1", "write note")
+		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "unused"})
+
+		if err := uc.DeleteTodo(context.Background(), "1"); err != nil {
+			t.Fatalf("DeleteTodo returned error: %v", err)
+		}
+		if repo.deleteCalls != 1 {
+			t.Fatalf("deleteCalls = %d, want 1", repo.deleteCalls)
+		}
+		if _, ok := repo.todos["1"]; ok {
+			t.Fatal("todo still exists after delete")
+		}
+	})
+
+	t.Run("returns repository error", func(t *testing.T) {
+		wantErr := errors.New("delete failed")
+		repo := newFakeTodoRepository()
+		repo.deleteErr = wantErr
+		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "unused"})
+
+		err := uc.DeleteTodo(context.Background(), "1")
+		if !errors.Is(err, wantErr) {
+			t.Fatalf("error = %v, want %v", err, wantErr)
+		}
+		if repo.deleteCalls != 1 {
+			t.Fatalf("deleteCalls = %d, want 1", repo.deleteCalls)
+		}
+	})
+}
+
 type fixedIDGenerator struct {
 	id string
 }
@@ -211,9 +244,11 @@ type fakeTodoRepository struct {
 	todos       map[string]*domain.Todo
 	createErr   error
 	updateErr   error
+	deleteErr   error
 	listErr     error
 	createCalls int
 	updateCalls int
+	deleteCalls int
 }
 
 func newFakeTodoRepository() *fakeTodoRepository {
@@ -249,6 +284,18 @@ func (r *fakeTodoRepository) Update(_ context.Context, todo *domain.Todo) error 
 	return nil
 }
 
+func (r *fakeTodoRepository) Delete(_ context.Context, id string) error {
+	r.deleteCalls++
+	if r.deleteErr != nil {
+		return r.deleteErr
+	}
+	if _, ok := r.todos[id]; !ok {
+		return domain.ErrTodoNotFound
+	}
+	delete(r.todos, id)
+	return nil
+}
+
 func (r *fakeTodoRepository) List(context.Context) ([]*domain.Todo, error) {
 	if r.listErr != nil {
 		return nil, r.listErr
@@ -265,6 +312,10 @@ func (r *fakeTodoRepository) List(context.Context) ([]*domain.Todo, error) {
 		todos = append(todos, cloneTodo(r.todos[id]))
 	}
 	return todos, nil
+}
+
+func (r *fakeTodoRepository) MaxNumericID(context.Context) (uint64, error) {
+	return 0, nil
 }
 
 func (r *fakeTodoRepository) mustStore(t *testing.T, id, title string) *domain.Todo {

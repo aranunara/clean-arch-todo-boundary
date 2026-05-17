@@ -3,8 +3,10 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/usecase"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,6 +15,9 @@ import (
 type TodoRepository struct {
 	pool *pgxpool.Pool
 }
+
+// TodoRepository が UsecaseのTodoRepository を満たしているか
+var _ usecase.TodoRepository = (*TodoRepository)(nil)
 
 func NewTodoRepository(ctx context.Context, databaseURL string) (*TodoRepository, error) {
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -69,6 +74,20 @@ func (r *TodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
 	return nil
 }
 
+func (r *TodoRepository) Delete(ctx context.Context, id string) error {
+	tag, err := r.pool.Exec(ctx, `
+		DELETE FROM todos
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrTodoNotFound
+	}
+	return nil
+}
+
 func (r *TodoRepository) List(ctx context.Context) ([]*domain.Todo, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, title, completed
@@ -96,15 +115,15 @@ func (r *TodoRepository) List(ctx context.Context) ([]*domain.Todo, error) {
 }
 
 func (r *TodoRepository) MaxNumericID(ctx context.Context) (uint64, error) {
-	var maxID int64
+	var maxID string
 	if err := r.pool.QueryRow(ctx, `
-		SELECT COALESCE(MAX(id::bigint), 0)
+		SELECT COALESCE(MAX(id::numeric), 0)::text
 		FROM todos
 		WHERE id ~ '^[0-9]+$'
 	`).Scan(&maxID); err != nil {
 		return 0, err
 	}
-	return uint64(maxID), nil
+	return strconv.ParseUint(maxID, 10, 64)
 }
 
 func scanTodo(row pgx.Row) (*domain.Todo, error) {

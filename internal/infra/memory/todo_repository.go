@@ -3,9 +3,11 @@ package memory
 import (
 	"context"
 	"sort"
+	"strconv"
 	"sync"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/usecase"
 )
 
 // TodoRepository は usecase.TodoRepository を in-memory map で具体化する。
@@ -14,6 +16,9 @@ type TodoRepository struct {
 	mu    sync.RWMutex
 	todos map[string]*domain.Todo
 }
+
+// TodoRepository が UsecaseのTodoRepository を満たしているか
+var _ usecase.TodoRepository = (*TodoRepository)(nil)
 
 func NewTodoRepository() *TodoRepository {
 	return &TodoRepository{todos: make(map[string]*domain.Todo)}
@@ -65,6 +70,35 @@ func (r *TodoRepository) List(_ context.Context) ([]*domain.Todo, error) {
 		todos = append(todos, cloneTodo(r.todos[id]))
 	}
 	return todos, nil
+}
+
+func (r *TodoRepository) MaxNumericID(_ context.Context) (uint64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	maxID := uint64(0)
+	for _, todo := range r.todos {
+		id, err := strconv.ParseUint(todo.ID, 10, 64)
+		if err != nil {
+			continue
+		}
+		if id > maxID {
+			maxID = id
+		}
+	}
+	return maxID, nil
+}
+
+func (r *TodoRepository) Delete(_ context.Context, id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.todos[id]; !ok {
+		return domain.ErrTodoNotFound
+	}
+
+	delete(r.todos, id)
+	return nil
 }
 
 func cloneTodo(todo *domain.Todo) *domain.Todo {
