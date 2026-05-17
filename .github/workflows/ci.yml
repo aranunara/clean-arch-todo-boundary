@@ -47,3 +47,25 @@ jobs:
 
       - name: Run lint
         run: make lint
+
+  pg-integration:
+    name: PostgreSQL Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check Docker
+        run: docker version
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run PostgreSQL integration tests
+        run: make test-pg-integration
