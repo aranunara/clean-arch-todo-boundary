@@ -2,10 +2,10 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 	"clean-arch-todo-boundary/internal/usecase"
 
 	"github.com/jackc/pgx/v5"
@@ -51,7 +51,7 @@ func (r *TodoRepository) FindByID(ctx context.Context, id string) (*domain.Todo,
 		FROM todos
 		WHERE id = $1
 	`, id))
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errs.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrTodoNotFound
 	}
 	return todo, err

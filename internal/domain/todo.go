@@ -1,18 +1,19 @@
 package domain
 
 import (
-	"errors"
 	"strings"
 	"unicode/utf8"
+
+	"clean-arch-todo-boundary/internal/errs"
 )
 
 const maxTodoTitleLength = 100
 
 var (
-	ErrInvalidTodoID    = errors.New("invalid todo id")
-	ErrInvalidTodoTitle = errors.New("invalid todo title")
-	ErrTodoCompleted    = errors.New("todo already completed")
-	ErrTodoNotFound     = errors.New("todo not found")
+	ErrInvalidTodoID    = errs.Mark(errs.New("invalid todo id"), errs.ErrInvalidInput)
+	ErrInvalidTodoTitle = errs.Mark(errs.New("invalid todo title"), errs.ErrInvalidInput)
+	ErrTodoCompleted    = errs.Mark(errs.New("todo already completed"), errs.ErrConflict)
+	ErrTodoNotFound     = errs.Mark(errs.New("todo not found"), errs.ErrNotFound)
 )
 
 // Todo は TODO という業務概念を表す。

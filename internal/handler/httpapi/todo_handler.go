@@ -3,10 +3,9 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
-	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 	"clean-arch-todo-boundary/internal/usecase"
 )
 
@@ -108,11 +107,11 @@ func (h *TodoHandler) listTodos(w http.ResponseWriter, r *http.Request) {
 
 func writeUseCaseError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain.ErrInvalidTodoID), errors.Is(err, domain.ErrInvalidTodoTitle):
+	case errs.IsInvalidInput(err):
 		writeError(w, http.StatusBadRequest, "invalid todo input")
-	case errors.Is(err, domain.ErrTodoNotFound):
+	case errs.IsNotFound(err):
 		writeError(w, http.StatusNotFound, "todo not found")
-	case errors.Is(err, domain.ErrTodoCompleted):
+	case errs.IsConflict(err):
 		writeError(w, http.StatusConflict, "completed todo cannot be renamed")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal server error")

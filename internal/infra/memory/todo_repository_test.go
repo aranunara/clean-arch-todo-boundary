@@ -2,10 +2,10 @@ package memory
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 )
 
 func TestCreateAndFindByID(t *testing.T) {
@@ -39,7 +39,7 @@ func TestCreateAndFindByID(t *testing.T) {
 
 func TestFindByID_NotFound(t *testing.T) {
 	_, err := NewTodoRepository().FindByID(context.Background(), "missing")
-	if !errors.Is(err, domain.ErrTodoNotFound) {
+	if !errs.Is(err, domain.ErrTodoNotFound) {
 		t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 	}
 }
@@ -76,7 +76,7 @@ func TestUpdate_NotFound(t *testing.T) {
 	todo := mustNewTodo(t, "missing", "write note")
 
 	err := NewTodoRepository().Update(context.Background(), todo)
-	if !errors.Is(err, domain.ErrTodoNotFound) {
+	if !errs.Is(err, domain.ErrTodoNotFound) {
 		t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 	}
 }
@@ -93,14 +93,14 @@ func TestDelete(t *testing.T) {
 	}
 
 	_, err := repo.FindByID(ctx, "1")
-	if !errors.Is(err, domain.ErrTodoNotFound) {
+	if !errs.Is(err, domain.ErrTodoNotFound) {
 		t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 	}
 }
 
 func TestDelete_NotFound(t *testing.T) {
 	err := NewTodoRepository().Delete(context.Background(), "missing")
-	if !errors.Is(err, domain.ErrTodoNotFound) {
+	if !errs.Is(err, domain.ErrTodoNotFound) {
 		t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 	}
 }

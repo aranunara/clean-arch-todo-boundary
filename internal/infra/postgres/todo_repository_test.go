@@ -4,7 +4,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testcontainers/testcontainers-go"
@@ -51,7 +51,7 @@ func TestTodoRepository_Postgres(t *testing.T) {
 		resetTodos(t, ctx, pool)
 
 		_, err := repo.FindByID(ctx, "missing")
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 	})
@@ -106,7 +106,7 @@ func TestTodoRepository_Postgres(t *testing.T) {
 		resetTodos(t, ctx, pool)
 
 		err := repo.Update(ctx, mustNewTodo(t, "missing", "missing todo"))
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 	})
@@ -120,7 +120,7 @@ func TestTodoRepository_Postgres(t *testing.T) {
 		}
 
 		_, err := repo.FindByID(ctx, "1")
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 	})
@@ -129,7 +129,7 @@ func TestTodoRepository_Postgres(t *testing.T) {
 		resetTodos(t, ctx, pool)
 
 		err := repo.Delete(ctx, "missing")
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 	})

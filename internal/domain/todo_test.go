@@ -1,9 +1,10 @@
 package domain
 
 import (
-	"errors"
 	"strings"
 	"testing"
+
+	"clean-arch-todo-boundary/internal/errs"
 )
 
 func TestNewTodo(t *testing.T) {
@@ -49,7 +50,7 @@ func TestNewTodo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			todo, err := NewTodo(tt.id, tt.title)
-			if !errors.Is(err, tt.wantErr) {
+			if !errs.Is(err, tt.wantErr) {
 				t.Fatalf("error = %v, want %v", err, tt.wantErr)
 			}
 			if tt.wantErr != nil {
@@ -112,7 +113,7 @@ func TestRename(t *testing.T) {
 			}
 
 			err = todo.Rename(tt.next)
-			if !errors.Is(err, tt.wantErr) {
+			if !errs.Is(err, tt.wantErr) {
 				t.Fatalf("error = %v, want %v", err, tt.wantErr)
 			}
 			if todo.Title != tt.wantTitle {

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +11,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"clean-arch-todo-boundary/internal/errs"
 )
 
 type todo struct {
@@ -83,17 +84,17 @@ func detectAPIURL() (string, error) {
 
 	output, err := exec.Command("docker", "compose", "port", "api", "8080").Output()
 	if err != nil {
-		return "", errors.New("API URL を検出できませんでした。先に make up-all するか、TODO_API_URL=http://127.0.0.1:PORT を指定してください")
+		return "", errs.New("API URL を検出できませんでした。先に make up-all するか、TODO_API_URL=http://127.0.0.1:PORT を指定してください")
 	}
 
 	endpoint := strings.TrimSpace(string(output))
 	if endpoint == "" {
-		return "", errors.New("API が起動していません。先に make up-all してください")
+		return "", errs.New("API が起動していません。先に make up-all してください")
 	}
 
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return "", fmt.Errorf("API の公開ポートを読めませんでした: %w", err)
+		return "", errs.Errorf("API の公開ポートを読めませんでした: %w", err)
 	}
 	if host == "" || host == "0.0.0.0" || host == "::" {
 		host = "127.0.0.1"
@@ -168,7 +169,7 @@ func doJSON(client *http.Client, method, url string, requestBody any, responseBo
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		payload, _ := io.ReadAll(res.Body)
-		return fmt.Errorf("%s %s returned %s: %s", method, url, res.Status, strings.TrimSpace(string(payload)))
+		return errs.Errorf("%s %s returned %s: %s", method, url, res.Status, strings.TrimSpace(string(payload)))
 	}
 
 	if responseBody == nil {
@@ -188,7 +189,7 @@ func printJSON(value any) error {
 }
 
 func usage() error {
-	return errors.New(`usage:
+	return errs.New(`usage:
   go run ./cmd/todoctl url
   go run ./cmd/todoctl list
   go run ./cmd/todoctl create "層の違いをメモする"

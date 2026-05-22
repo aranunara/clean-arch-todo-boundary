@@ -3,13 +3,13 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 	"clean-arch-todo-boundary/internal/usecase"
 )
 
@@ -171,7 +171,7 @@ func TestUseCaseErrorResponses(t *testing.T) {
 		},
 		{
 			name:       "unknown error",
-			err:        errors.New("database unavailable"),
+			err:        errs.New("database unavailable"),
 			wantStatus: http.StatusInternalServerError,
 			wantError:  "internal server error",
 		},

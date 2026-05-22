@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"sort"
 	"testing"
 
 	"clean-arch-todo-boundary/internal/domain"
+	"clean-arch-todo-boundary/internal/errs"
 )
 
 func TestSequentialTodoIDGenerator(t *testing.T) {
@@ -51,7 +51,7 @@ func TestCreateTodo(t *testing.T) {
 		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "todo-1"})
 
 		_, err := uc.CreateTodo(context.Background(), CreateTodoInput{Title: " "})
-		if !errors.Is(err, domain.ErrInvalidTodoTitle) {
+		if !errs.Is(err, domain.ErrInvalidTodoTitle) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrInvalidTodoTitle)
 		}
 		if repo.createCalls != 0 {
@@ -60,13 +60,13 @@ func TestCreateTodo(t *testing.T) {
 	})
 
 	t.Run("propagates repository error", func(t *testing.T) {
-		wantErr := errors.New("create failed")
+		wantErr := errs.New("create failed")
 		repo := newFakeTodoRepository()
 		repo.createErr = wantErr
 		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "todo-1"})
 
 		_, err := uc.CreateTodo(context.Background(), CreateTodoInput{Title: "write note"})
-		if !errors.Is(err, wantErr) {
+		if !errs.Is(err, wantErr) {
 			t.Fatalf("error = %v, want %v", err, wantErr)
 		}
 	})
@@ -102,7 +102,7 @@ func TestRenameTodo(t *testing.T) {
 			ID:    "missing",
 			Title: "rewrite note",
 		})
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 		if repo.updateCalls != 0 {
@@ -120,7 +120,7 @@ func TestRenameTodo(t *testing.T) {
 			ID:    "1",
 			Title: "rewrite note",
 		})
-		if !errors.Is(err, domain.ErrTodoCompleted) {
+		if !errs.Is(err, domain.ErrTodoCompleted) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoCompleted)
 		}
 		if repo.updateCalls != 0 {
@@ -153,7 +153,7 @@ func TestCompleteTodo(t *testing.T) {
 		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "unused"})
 
 		_, err := uc.CompleteTodo(context.Background(), "missing")
-		if !errors.Is(err, domain.ErrTodoNotFound) {
+		if !errs.Is(err, domain.ErrTodoNotFound) {
 			t.Fatalf("error = %v, want %v", err, domain.ErrTodoNotFound)
 		}
 		if repo.updateCalls != 0 {
@@ -187,13 +187,13 @@ func TestListTodos(t *testing.T) {
 	})
 
 	t.Run("propagates repository error", func(t *testing.T) {
-		wantErr := errors.New("list failed")
+		wantErr := errs.New("list failed")
 		repo := newFakeTodoRepository()
 		repo.listErr = wantErr
 		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "unused"})
 
 		_, err := uc.ListTodos(context.Background())
-		if !errors.Is(err, wantErr) {
+		if !errs.Is(err, wantErr) {
 			t.Fatalf("error = %v, want %v", err, wantErr)
 		}
 	})
@@ -217,13 +217,13 @@ func TestDeleteTodo(t *testing.T) {
 	})
 
 	t.Run("returns repository error", func(t *testing.T) {
-		wantErr := errors.New("delete failed")
+		wantErr := errs.New("delete failed")
 		repo := newFakeTodoRepository()
 		repo.deleteErr = wantErr
 		uc := NewTodoUseCase(repo, fixedIDGenerator{id: "unused"})
 
 		err := uc.DeleteTodo(context.Background(), "1")
-		if !errors.Is(err, wantErr) {
+		if !errs.Is(err, wantErr) {
 			t.Fatalf("error = %v, want %v", err, wantErr)
 		}
 		if repo.deleteCalls != 1 {
