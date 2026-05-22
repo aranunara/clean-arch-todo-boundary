@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    vet:
+      run: make vet
+    lint:
+      run: make lint
+    modernize:
+      run: make modernize

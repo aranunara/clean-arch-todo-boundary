@@ -2,7 +2,7 @@ MIGRATE_DATABASE_URL := postgres://todo:todo@db:5432/todo?sslmode=disable
 GO_CACHE ?= /tmp/clean-arch-todo-boundary-go-build
 GOLANGCI_LINT_CACHE_DIR ?= /tmp/clean-arch-todo-boundary-golangci-lint
 
-.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test test-pg-integration lint ci run
+.PHONY: up up-all up-d down down-all down-v logs ports cli try migrate-up migrate-down migrate-create test test-pg-integration vet lint modernize ci run
 
 up:
 	$(MAKE) up-all
@@ -56,10 +56,16 @@ test:
 test-pg-integration:
 	GOCACHE=$(GO_CACHE) go test -tags=pg_integration ./...
 
+vet:
+	GOCACHE=$(GO_CACHE) go vet ./...
+
 lint:
 	GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_DIR) GOCACHE=$(GO_CACHE) golangci-lint run
 
-ci: test lint
+modernize:
+	GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_DIR) GOCACHE=$(GO_CACHE) golangci-lint run --enable-only=modernize ./...
+
+ci: test vet lint modernize
 
 run:
 	go run ./cmd/server

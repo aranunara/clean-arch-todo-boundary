@@ -14,6 +14,7 @@ linters:
           list-mode: strict
           allow:
             - $gostd
+            - clean-arch-todo-boundary/internal/errs
 
         # Usecase はアプリケーション操作の段取りを持つ層。
         # Domain model は使うが、Handler や Infra の具象実装には依存しない。
@@ -24,6 +25,7 @@ linters:
           allow:
             - $gostd
             - clean-arch-todo-boundary/internal/domain
+            - clean-arch-todo-boundary/internal/errs
 
         # Handler は HTTP と Usecase の変換境界。
         # Usecase の input/output と Domain error の HTTP 変換だけを知り、Infra は知らない。
@@ -34,6 +36,7 @@ linters:
           allow:
             - $gostd
             - clean-arch-todo-boundary/internal/domain
+            - clean-arch-todo-boundary/internal/errs
             - clean-arch-todo-boundary/internal/usecase
 
         # Infrastructure は外側の技術詳細。
@@ -46,6 +49,7 @@ linters:
           allow:
             - $gostd
             - clean-arch-todo-boundary/internal/domain
+            - clean-arch-todo-boundary/internal/errs
             - clean-arch-todo-boundary/internal/usecase
             - github.com/jackc/pgx/v5
 
@@ -71,3 +75,4 @@ linters:
           allow:
             - $gostd
             - clean-arch-todo-boundary/internal/di
+            - clean-arch-todo-boundary/internal/errs
